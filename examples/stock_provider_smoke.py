@@ -25,6 +25,7 @@ import subprocess
 import sys
 import threading
 import time
+import urllib.request
 from pathlib import Path
 
 import boto3
@@ -164,6 +165,16 @@ def main() -> int:
             f"/opt/parsl-venv/bin/pip install '{requirement}' && export PATH=/opt/parsl-venv/bin:$PATH"
         )
 
+    params = inspect.signature(AWSProvider).parameters
+    if "ssh_cidr" in params:
+        # Fixed provider (scttfrdmn/aws-elastic-parsl#12) opens no SSH by default;
+        # the reverse tunnels need it from this host only.
+        my_ip = urllib.request.urlopen("https://checkip.amazonaws.com", timeout=10).read().decode().strip()
+        install_kwargs["ssh_cidr"] = f"{my_ip}/32"
+    if "teardown_on_shutdown" in params and args.teardown:
+        # Fixed provider (scttfrdmn/aws-elastic-parsl#5): tear down when the executor shuts down.
+        install_kwargs["teardown_on_shutdown"] = True
+
     Path(args.run_dir).mkdir(exist_ok=True)
     provider = AWSProvider(
         image_id=ami,
@@ -204,7 +215,7 @@ def main() -> int:
         finally:
             tunnels.stop()
 
-    if args.teardown:
+    if args.teardown and not install_kwargs.get("teardown_on_shutdown"):
         try:
             provider.teardown()
         except Exception as e:
