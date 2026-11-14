@@ -1,5 +1,6 @@
-.venv/
+.venv*/
 runinfo/
 __pycache__/
 *.egg-info/
 .DS_Store
+globus-compute/.rendered-template.yaml.j2

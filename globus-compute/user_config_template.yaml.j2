@@ -1,0 +1,44 @@
+{#-
+  Globus Compute user-endpoint template: GlobusComputeEngine on Parsl's AWSProvider.
+
+  Rendered by gce.sh configure; @@NAME@@ placeholders are filled in then.
+  Requires Parsl with the AWSProvider fixes (scttfrdmn/parsl@aws-provider-fixes-2026.11.09).
+
+  The endpoint (in a container on a laptop) is behind NAT, so workers dial
+  127.0.0.1:@@WORKER_PORT@@ on their own host, which aws_elastic_parsl.tunnel forwards
+  back over SSH. The transport is SSH, hence encrypted: false.
+-#}
+
+{#- Shut the user endpoint down after ~5 idle minutes; with teardown_on_shutdown the
+    provider then removes its VPC, so nothing is left running in AWS. #}
+idle_heartbeats_soft: 10
+idle_heartbeats_hard: 5760
+
+engine:
+  type: GlobusComputeEngine
+  address: 127.0.0.1
+  worker_port: @@WORKER_PORT@@
+  encrypted: false
+  max_workers_per_node: {{ max_workers_per_node | default(2) }}
+
+  provider:
+    type: AWSProvider
+    # Latest Ubuntu 24.04 (Python 3.12, matching the endpoint), resolved by EC2 at launch.
+    image_id: resolve:ssm:/aws/service/canonical/ubuntu/server/24.04/stable/current/amd64/hvm/ebs-gp3/ami-id
+    instance_type: {{ instance_type | default("@@INSTANCE_TYPE@@") }}
+    region: @@REGION@@
+    key_name: @@KEY_NAME@@
+    ssh_cidr: @@SSH_CIDR@@
+    state_file: @@STATE_FILE@@
+    teardown_on_shutdown: true
+    walltime: "{{ walltime | default('01:00:00') }}"
+
+    init_blocks: 0
+    min_blocks: 0
+    max_blocks: {{ max_blocks | default(1) }}
+    nodes_per_block: 1
+
+    # The provider installs parsl==<endpoint's Parsl> into /opt/parsl-venv, which is
+    # first on PATH here; workers are launched via `globus-compute-endpoint python-exec`.
+    worker_init: |
+      pip install 'globus-compute-endpoint==@@GCE_VERSION@@'
