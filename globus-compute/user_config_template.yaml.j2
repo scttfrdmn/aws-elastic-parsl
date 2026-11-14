@@ -14,6 +14,10 @@
 idle_heartbeats_soft: 10
 idle_heartbeats_hard: 5760
 
+{#- AMQPS on 5671 rather than 443: on 443 the connection was repeatedly cut client-side,
+    and the endpoint's task subscriber gave up after a reconnect race (see README). #}
+amqp_port: 5671
+
 engine:
   type: GlobusComputeEngine
   address: 127.0.0.1

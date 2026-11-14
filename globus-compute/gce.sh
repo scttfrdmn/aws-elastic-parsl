@@ -51,6 +51,7 @@ configure)
         test -d $EP_DIR || globus-compute-endpoint configure $GC_ENDPOINT >/dev/null
         cp /tmp/template.yaml.j2 $EP_DIR/user_config_template.yaml.j2
         printf 'AWS_PROFILE: %s\n' '$AWS_PROFILE' > $EP_DIR/user_environment.yaml
+        grep -q '^amqp_port:' $EP_DIR/config.yaml || printf 'amqp_port: 5671\n' >> $EP_DIR/config.yaml
         rm -f $EP_DIR/user_config_schema.json"
     rm -f "$here/.rendered-template.yaml.j2"
     echo "configured $GC_ENDPOINT: region=$region ssh_cidr=$ssh_cidr key=$KEY_NAME"

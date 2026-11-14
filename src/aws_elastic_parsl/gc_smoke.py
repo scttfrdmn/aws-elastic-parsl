@@ -32,7 +32,8 @@ def main() -> None:
     print(f"endpoint {name} = {endpoint_id}", flush=True)
 
     t0 = time.monotonic()
-    with Executor(endpoint_id=endpoint_id) as gce:
+    # AMQPS on 5671 rather than 443; see globus-compute/README.md.
+    with Executor(endpoint_id=endpoint_id, amqp_port=5671) as gce:
         print("worker:", gce.submit(whereami).result(timeout=1800), flush=True)
         print(f"first result after {time.monotonic() - t0:.0f}s", flush=True)
         print("squares:", [f.result(timeout=600) for f in [gce.submit(square, i) for i in range(n)]], flush=True)

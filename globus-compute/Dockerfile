@@ -7,7 +7,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends git openssh-cli
     && rm -rf /var/lib/apt/lists/*
 
 ARG GCE_VERSION=4.21.0
-ARG PARSL_SPEC="parsl[aws] @ git+https://github.com/scttfrdmn/parsl@aws-provider-fixes-2026.11.09"
+# scttfrdmn/parsl aws-provider-fixes-2026.11.09, pinned for reproducible builds
+ARG PARSL_SPEC="parsl[aws] @ git+https://github.com/scttfrdmn/parsl@d0e77e925e89f73a71c9d4498a8165c4cf42c944"
 RUN pip install --no-cache-dir "globus-compute-endpoint==${GCE_VERSION}" "${PARSL_SPEC}"
 
 COPY src/aws_elastic_parsl /opt/aws_elastic_parsl/aws_elastic_parsl

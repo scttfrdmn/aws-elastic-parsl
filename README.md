@@ -46,6 +46,12 @@ and clean up with `cleanup_stock_provider.py --yes --include-untagged`.
 
 The submit side must run Python 3.12 so that the workers (Ubuntu 24.04, Python 3.12) pass Parsl's version check.
 
+## Globus Compute
+
+[globus-compute/](globus-compute/README.md) runs a Globus Compute endpoint from a laptop, with the
+fixed stock `AWSProvider` as its engine's provider. Workers are created on demand, and the VPC is
+removed when the endpoint goes idle.
+
 ## Documentation
 
 [docs/stock-aws-provider/](docs/stock-aws-provider/index.md) is a guide to Parsl's stock `AWSProvider`.
