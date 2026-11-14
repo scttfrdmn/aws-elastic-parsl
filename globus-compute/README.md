@@ -79,7 +79,8 @@ with Executor(endpoint_id="<id from ./gce.sh start>", amqp_port=5671) as ex:
   ~90 s (`SSLEOFError`). The endpoint reconnected faster than the broker noticed the old connection
   had gone, got `403 ACCESS_REFUSED … in exclusive use` for its task queue, and the task subscriber
   gave up after 3 attempts in 3 s. The endpoint stayed up but never received another task. On 5671
-  there were no drops. Use `amqp_port=5671` in the SDK too.
+  there were no drops. Use `amqp_port=5671` in the SDK too. Reported upstream as
+  [globus/globus-compute#2232](https://github.com/globus/globus-compute/issues/2232).
 - **Python 3.12 everywhere.** HTEX requires the same Python minor version on the endpoint and the
   workers, and Ubuntu 24.04 ships 3.12. The SDK warns about micro-version differences; that's
   harmless.
