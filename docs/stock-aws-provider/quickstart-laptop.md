@@ -227,11 +227,12 @@ What happens:
    test. If anything is left, it returns `False` and keeps the state file. See
    [lifecycle-and-cost.md](lifecycle-and-cost.md#teardown).
 
-You can pass `teardown_on_shutdown=True` to the provider instead of calling `teardown()`
-([#5](https://github.com/scttfrdmn/aws-elastic-parsl/issues/5)). Parsl then tears down when the
-executor shuts down, after the blocks are cancelled.
-
-<!-- PENDING(#5): teardown_on_shutdown is on the aws-provider-teardown-on-shutdown branch. -->
+You can pass `teardown_on_shutdown=True` to the provider instead of calling `teardown()` at the end
+([#5](https://github.com/scttfrdmn/aws-elastic-parsl/issues/5)). The executor then tears down during
+Parsl's cleanup, after the blocks are cancelled. If teardown leaves anything behind, it logs a WARNING
+rather than returning `False`. The hook runs only if the executor started, so keep an explicit
+`teardown()` for the case where `parsl.load()` fails. See
+[lifecycle-and-cost.md](lifecycle-and-cost.md#shutdown-hook-and-teardown_on_shutdown).
 
 ## Parsl ≤ 2026.11.09 (released)
 

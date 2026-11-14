@@ -44,13 +44,10 @@ Throughout this guide:
 | Launch errors | `submit()` returns `None`, and `key_name=None` fails botocore validation. | `SubmitException`. `key_name=None` launches without a key pair. | [#9](https://github.com/scttfrdmn/aws-elastic-parsl/issues/9) |
 | `teardown()` | Always fails. | Deletes only resources tagged as this provider's infrastructure, returns `True`/`False`, and is idempotent. | [#4](https://github.com/scttfrdmn/aws-elastic-parsl/issues/4) |
 | State file | A corrupt file silently creates a new VPC. A failed creation leaks resources. | `ConfigurationError` for a corrupt file. Failed creation is rolled back. | [#10](https://github.com/scttfrdmn/aws-elastic-parsl/issues/10) |
-| Cleanup on exit | Parsl never calls `provider.goodbye()`, so the VPC is permanent. | Optional `teardown_on_shutdown=True`. | [#5](https://github.com/scttfrdmn/aws-elastic-parsl/issues/5) |
+| Cleanup on exit | Parsl never calls `provider.goodbye()`, so the VPC is permanent. | A new provider `shutdown()` hook, run when the executor shuts down. With `teardown_on_shutdown=True` it tears down; by default it logs how to. | [#5](https://github.com/scttfrdmn/aws-elastic-parsl/issues/5) |
 | `region` default | Always `us-east-2`, which overrides `AWS_DEFAULT_REGION` and the profile's region. | Resolved by boto3 from `AWS_DEFAULT_REGION` or the profile, with `us-east-2` only as a last resort. | [#11](https://github.com/scttfrdmn/aws-elastic-parsl/issues/11) |
 | `instance_type` default | `t2.small` (previous generation). | `t3.small`. | [#11](https://github.com/scttfrdmn/aws-elastic-parsl/issues/11) |
 | Security group | SSH (22/tcp) and all ICMP open to `0.0.0.0/0`. | Nothing open from outside the VPC except ICMP "fragmentation needed". SSH and ICMP only from `ssh_cidr`, if set. | [#12](https://github.com/scttfrdmn/aws-elastic-parsl/issues/12) |
-
-<!-- PENDING(#5): teardown_on_shutdown is on a separate branch; adjust its name here, in
-     reference.md and in the configs if it changes. -->
 
 In short, the released provider cannot launch a block in a region where your account already has
 other instances. Where it does launch, the worker install fails on current Ubuntu. Nothing shuts

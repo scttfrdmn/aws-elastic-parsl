@@ -10,13 +10,14 @@
 3. **Scaling in.** The strategy cancels blocks that have been idle for `Config.max_idletime` (default
    120 s), down to `min_blocks`. `cancel()` calls `TerminateInstances`.
 4. **Shutdown** (end of the `with parsl.load(...)` block, `parsl.dfk().cleanup()`, or interpreter exit).
-   Parsl cancels all remaining blocks unless the executor is in a bad state. It then shuts down the
-   executor. With the fixes and `teardown_on_shutdown=True`, the executor's shutdown also tears down
-   the infrastructure ([#5](https://github.com/scttfrdmn/aws-elastic-parsl/issues/5)).
-5. **The infrastructure.** It stays, unless you tear it down. Parsl never calls the provider's
-   `goodbye()` or `teardown()` on its own.
-
-<!-- PENDING(#5): teardown_on_shutdown is on the aws-provider-teardown-on-shutdown branch. -->
+   - **Cancelling blocks.** Parsl cancels all remaining blocks unless the executor is in a bad state.
+   - **Shutting down the executor.** Parsl then shuts down the executor.
+   - **With the fixes ([#5](https://github.com/scttfrdmn/aws-elastic-parsl/issues/5)):** the executor
+     then calls the provider's `shutdown()` hook. See [Shutdown hook](#shutdown-hook-and-teardown_on_shutdown).
+5. **The infrastructure.** By default it stays, for reuse through the state file.
+   - **Released:** Parsl never calls the provider's `goodbye()` or `teardown()`.
+   - **With the fixes:** the infrastructure is removed at shutdown only with
+     `teardown_on_shutdown=True`.
 
 Instances that the shutdown step does **not** stop:
 
@@ -191,9 +192,51 @@ Teardown leaves these in place and returns `False`; nothing raises:
   deliberately with the cleanup script (below).
 - **State files pointing at an untagged VPC,** or a VPC with another infrastructure ID.
 
-To tear down automatically when Parsl shuts down, pass `teardown_on_shutdown=True`. The default is
-`False`, which keeps the VPC for reuse through the state file. Teardown then runs after the blocks are
-cancelled. It is skipped, with a warning, when `linger=True`.
+### Shutdown hook and `teardown_on_shutdown`
+
+With the fixes ([#5](https://github.com/scttfrdmn/aws-elastic-parsl/issues/5)), Parsl gives providers a
+`shutdown()` hook. `ExecutionProvider.shutdown()` does nothing by default.
+
+**When the hook runs.** At the end of a workflow the order is:
+
+```
+DFK.cleanup()
+  → JobStatusPoller.close()      scale in: cancel() every remaining block
+  → executor.shutdown()          e.g. stop the HTEX interchange
+      → provider.shutdown()      once, in a finally block, after the executor's own shutdown
+```
+
+A failure in the hook, or while scaling in an executor, is logged and does not stop the rest of the
+cleanup. Before the fix, an exception from `cancel()` meant no executor was shut down at all.
+
+**What `AWSProvider.shutdown()` does.**
+
+| Setting | Behaviour |
+|---|---|
+| `teardown_on_shutdown=False` (default) | Keeps the infrastructure. Logs at INFO that it was kept, with the VPC ID, the absolute state-file path, and how to remove it (`teardown()` or `teardown_on_shutdown=True`). |
+| `teardown_on_shutdown=True` | Calls `teardown()`, with the tag-scoped rules [above](#teardown). If `teardown()` returns `False`, it logs the WARNING `Some AWS infrastructure (VPC …) was kept; see the warnings above`, and the state file is kept. Any exception is logged, not raised. |
+| `teardown_on_shutdown=True` and `linger=True` | Skips teardown with a WARNING, because teardown would terminate the lingering instances. Call `teardown()` yourself later. |
+
+```python
+provider = AWSProvider(
+    image_id='ami-0123456789abcdef0',
+    key_name='my-key',
+    region='us-west-2',
+    teardown_on_shutdown=True,
+)
+```
+
+Caveats:
+
+- **The executor never started.** If the executor never started (for example, `parsl.load()` failed
+  before the HTEX interchange came up), its `shutdown()` returns early, and the hook does not run. But
+  `AWSProvider.__init__` has already created the VPC. Call `provider.teardown()` yourself, for example
+  in a `finally` block.
+- **Custom executors.** A third-party `BlockProviderExecutor` subclass must call `super().shutdown()`,
+  or the hook never runs.
+- **`goodbye()`.** It is unchanged: it still just calls `teardown()`, and Parsl does not call it.
+- **Teardown waits.** Teardown runs inside Parsl's cleanup, so it waits there for the provider's
+  instances to terminate (about 50 s in a live test, up to about 10 minutes).
 
 ### Parsl ≤ 2026.11.09 (released) ([#4](https://github.com/scttfrdmn/aws-elastic-parsl/issues/4))
 

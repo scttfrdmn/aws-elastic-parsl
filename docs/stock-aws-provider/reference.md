@@ -28,10 +28,8 @@ AWSProvider(
 )
 ```
 
-<!-- PENDING(#5): teardown_on_shutdown is on a separate branch; confirm its name and position. -->
-
-The parameters added by the fixes come after `launcher`. Their order relative to each other depends
-on how the fix branches are merged, so pass everything after `key_name` by keyword.
+The parameters added by the fixes come after `launcher`, in the order shown. Pass everything after
+`key_name` by keyword.
 
 - **Released Parsl.** Passing `parsl_requirement`, `ssh_cidr` or `teardown_on_shutdown` to Parsl
   ≤ 2026.11.09 raises `TypeError: … unexpected keyword argument`. To write code that runs on both,
@@ -247,11 +245,19 @@ or tear down and recreate. See [networking.md](networking.md#security-group-rule
 
 ### `teardown_on_shutdown` (bool, default False; with the fixes only)
 
-When `True`, the executor's shutdown calls `teardown()` after Parsl has cancelled the blocks
-([#5](https://github.com/scttfrdmn/aws-elastic-parsl/issues/5)). With `linger=True` it is skipped, with a
-warning. The default keeps the infrastructure for reuse through the state file.
+Controls the provider's `shutdown()` hook, which the executor calls once at the end of its own
+`shutdown()`, after Parsl has cancelled the blocks
+([#5](https://github.com/scttfrdmn/aws-elastic-parsl/issues/5)).
 
-<!-- PENDING(#5): confirm the name and the hook it uses. -->
+- **`False` (default):** keeps the infrastructure for reuse through the state file. It logs at INFO
+  the VPC ID, the absolute state-file path, and how to remove it.
+- **`True`:** calls `teardown()`. If that returns `False`, it logs the WARNING
+  `Some AWS infrastructure (VPC …) was kept`. Exceptions are logged, not raised.
+- **`True` with `linger=True`:** skipped, with a WARNING.
+
+The hook does not run if the executor never started, even though the constructor has already created
+the VPC. Call `teardown()` yourself in that case. See
+[lifecycle-and-cost.md](lifecycle-and-cost.md#shutdown-hook-and-teardown_on_shutdown).
 
 ## Methods and attributes
 
@@ -259,6 +265,7 @@ warning. The default keeps the infrastructure for reuse through the state file.
 |---|---|
 | `teardown()` | **Released:** always fails ([#4](https://github.com/scttfrdmn/aws-elastic-parsl/issues/4)). **With the fixes:** terminates the instances tagged with this infrastructure ID (and any this object launched), waits for them, and deletes only resources whose `parsl:infrastructure` tag matches. Returns `True` if everything was removed and the state file deleted. Returns `False` if anything was left (foreign instances, untagged resources, a state file without `infrastructureID`): the state file is kept, and a WARNING lists what was left and why. Idempotent. See [lifecycle-and-cost.md](lifecycle-and-cost.md#teardown). |
 | `goodbye()` | Calls `teardown()`. Parsl itself never calls it ([#5](https://github.com/scttfrdmn/aws-elastic-parsl/issues/5)). |
+| `shutdown()` | With the fixes: the hook the executor calls at shutdown. Tears down if `teardown_on_shutdown=True`, and otherwise logs that the infrastructure was kept. Never raises. |
 | `submit(command, tasks_per_node, job_name)` | Launches one instance and returns its instance ID, which is the Parsl job ID. **Released:** returns `None` on failure. **With the fixes:** raises `SubmitException`. |
 | `status(job_ids)` | **Released:** raises `KeyError` when called with no job IDs in a region with other instances ([#1](https://github.com/scttfrdmn/aws-elastic-parsl/issues/1)). **With the fixes:** describes only the given instances and returns statuses in `job_ids` order. Instances EC2 no longer reports count as completed. |
 | `cancel(job_ids)` | Terminates the instances. Ignored with `linger=True`. |
