@@ -3,23 +3,28 @@
 Ephemeral AWS execution for [Parsl](https://parsl-project.org): run workflows on EC2 from a laptop with
 nothing left running in your account afterwards.
 
-Parsl's stock `AWSProvider` predates most of today's AWS and Parsl. It assumes the submit host is
-directly reachable by the workers, creates a VPC it never removes, and has several defects that keep it
-from working at all in a typical account. This project:
+Parsl's stock `AWSProvider` predates most of today's AWS and Parsl. It assumes the workers can reach
+the submit host directly, creates a VPC it never removes, and has several defects that stop it working
+at all in a typical account. This project:
 
-1. **Fixes the stock `AWSProvider` upstream.** Each defect gets an issue here and a PR to
-   [Parsl/parsl](https://github.com/Parsl/parsl), with tests and a live EC2 check.
-2. **Documents the stock provider**: setup, credentials, networking, and cleanup.
-3. **Builds `AWSEphemeralProvider`**: the same constructor interface as `AWSProvider`, but every AWS
-   resource is created per run and torn down on exit, and workers reach the submit host without a
-   standing head node.
-4. **Adds Globus Compute support** after that.
+1. **Fixed the stock `AWSProvider` upstream.** Each defect has an issue here and a PR to
+   [Parsl/parsl](https://github.com/Parsl/parsl) (#4182–#4190), with tests and a live EC2 check.
+2. **Documented the stock provider**: setup, credentials, networking, and cleanup.
+3. **Ran Globus Compute on it.** [`globus-compute/`](globus-compute/README.md) runs an HTEX-based
+   endpoint from a laptop, with workers on EC2.
+
+**Scope change (2026-11-14):** the goal is Globus Compute, not Parsl, and HTEX's model (workers
+connecting in to the submit host) isn't cloud friendly. The ephemeral-provider plans are superseded by
+[aws-elastic-globus-compute](https://github.com/scttfrdmn/aws-elastic-globus-compute), a Globus Compute
+engine that runs tasks on ephemeral AWS capacity without Parsl. This repo stays as the home of the
+Parsl fixes, their docs, and the HTEX reference setup.
 
 It is a sister project to [aws-elastic-gcs](https://github.com/scttfrdmn/aws-elastic-gcs).
 
 ## Status
 
-Pre-release (0.x). Work is tracked in this repo's issues, milestones and project board.
+Pre-release (0.x), maintenance only: responding to reviews of the upstream Parsl PRs. Tracked in this
+repo's issues.
 
 ## Running the stock provider today
 

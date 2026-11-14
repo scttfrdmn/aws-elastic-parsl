@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- **Scope:** the ephemeral-provider and Globus Compute plans moved to
+  [aws-elastic-globus-compute](https://github.com/scttfrdmn/aws-elastic-globus-compute), which needs no
+  Parsl. This repo keeps the upstream `AWSProvider` fixes, their docs and the HTEX reference setup
+  (#16, #17, #19).
+
 ### Added
 - `globus-compute/`: Globus Compute endpoint (4.21.0) on the fixed stock `AWSProvider`, run in a
   container on a laptop, with `gce.sh` to build, log in, configure, start, test and stop.
