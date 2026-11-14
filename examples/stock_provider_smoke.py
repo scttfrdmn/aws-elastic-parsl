@@ -17,6 +17,7 @@ leaves its VPC behind by design.
 from __future__ import annotations
 
 import argparse
+import inspect
 import logging
 import os
 import platform
@@ -146,21 +147,37 @@ def main() -> int:
     if local_py != "3.12":
         log.warning("submit-side Python is %s; Ubuntu 24.04 workers run 3.12 -> VersionMismatch", local_py)
 
+    requirement = args.worker_parsl or f"parsl=={parsl.__version__}"
+    install_kwargs: dict = {}
+    fixed = "parsl_requirement" in inspect.signature(AWSProvider).parameters
+    if fixed:
+        # Fixed provider (scttfrdmn/aws-elastic-parsl#6): it builds a pinned venv itself.
+        if args.worker_parsl:
+            install_kwargs["parsl_requirement"] = args.worker_parsl
+    else:
+        # Stock provider: its `pip3 install parsl` is refused on Ubuntu 24.04 (PEP 668),
+        # and --break-system-packages fails on Debian-owned packages, so build a
+        # version-matched venv here. worker_init is inlined before the worker command,
+        # so the PATH export carries over to it.
+        install_kwargs["worker_init"] = (
+            "apt-get install -y python3-venv && python3 -m venv /opt/parsl-venv && "
+            f"/opt/parsl-venv/bin/pip install '{requirement}' && export PATH=/opt/parsl-venv/bin:$PATH"
+        )
+
     Path(args.run_dir).mkdir(exist_ok=True)
     provider = AWSProvider(
         image_id=ami,
         key_name=args.key_name,
         region=region,
         instance_type=args.instance_type,
-        # Stock check only looks at profile=/key_file=/AWS_ACCESS_KEY_ID, not AWS_PROFILE.
-        profile=profile,
+        # The stock credential check ignores AWS_PROFILE (scttfrdmn/aws-elastic-parsl#2);
+        # the fixed provider resolves it through boto3's default chain.
+        profile=None if fixed else profile,
         state_file=str(Path(args.run_dir) / "awsproviderstate.json"),
         init_blocks=1,
         min_blocks=0,
         max_blocks=1,
-        # The template's bare `pip3 install ... parsl` is refused on Ubuntu 24.04
-        # (PEP 668), so install a version-matched Parsl here.
-        worker_init=f"pip3 install --break-system-packages '{args.worker_parsl or f'parsl=={parsl.__version__}'}'",
+        **install_kwargs,
     )
 
     htex = HighThroughputExecutor(
