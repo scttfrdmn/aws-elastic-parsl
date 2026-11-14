@@ -10,3 +10,6 @@ All notable changes to this project are documented here. The format follows
 - `examples/stock_provider_smoke.py`: runs Parsl's stock `AWSProvider` from a laptop using
   `AWS_PROFILE`, bridging worker traffic over an SSH reverse tunnel.
 - `examples/cleanup_stock_provider.py`: removes the VPCs the stock provider leaves behind.
+- `docs/stock-aws-provider/`: guide to Parsl's stock `AWSProvider`, covering released Parsl and the
+  pending fixes. It has quickstarts (laptop, in-AWS), credentials, networking, worker environment,
+  lifecycle and cost, released-version workarounds, troubleshooting and a parameter reference.

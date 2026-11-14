@@ -24,15 +24,34 @@ Pre-release (0.x). Work is tracked in this repo's issues, milestones and project
 ## Running the stock provider today
 
 `examples/stock_provider_smoke.py` runs one block of the stock provider from a laptop. Credentials come
-from `AWS_PROFILE`. Worker traffic goes over an SSH reverse tunnel, so the provider itself is not patched:
+from `AWS_PROFILE`. Worker traffic goes over an SSH reverse tunnel, so the provider itself is not
+patched. The script detects which provider version is installed.
+
+With the fixes, from the `aws-provider-integration` branch of
+[scttfrdmn/parsl](https://github.com/scttfrdmn/parsl), which merges all the fix branches until they
+are released upstream:
 
 ```bash
-uv venv --python 3.12 .venv && uv pip install --python .venv 'parsl[aws]'
-PATH=$PWD/.venv/bin:$PATH AWS_PROFILE=aws python examples/stock_provider_smoke.py
-AWS_PROFILE=aws .venv/bin/python examples/cleanup_stock_provider.py --yes   # the VPC is left behind
+uv venv --python 3.12 .venv
+uv pip install --python .venv 'parsl[aws] @ git+https://github.com/scttfrdmn/parsl@aws-provider-integration'
+PATH=$PWD/.venv/bin:$PATH AWS_PROFILE=aws python examples/stock_provider_smoke.py --teardown
+AWS_PROFILE=aws .venv/bin/python examples/cleanup_stock_provider.py   # dry run: should find nothing
 ```
 
+With released Parsl (`uv pip install --python .venv 'parsl[aws]'`), the smoke test fails in any region
+where the account has other instances, with `KeyError: 'i-…'`
+([#1](https://github.com/scttfrdmn/aws-elastic-parsl/issues/1)). Use the workarounds in
+[docs/stock-aws-provider/released-workarounds.md](docs/stock-aws-provider/released-workarounds.md),
+and clean up with `cleanup_stock_provider.py --yes --include-untagged`.
+
 The submit side must run Python 3.12 so that the workers (Ubuntu 24.04, Python 3.12) pass Parsl's version check.
+
+## Documentation
+
+[docs/stock-aws-provider/](docs/stock-aws-provider/index.md) is a guide to Parsl's stock `AWSProvider`.
+It covers released Parsl (≤ 2026.11.09) and the pending fixes: quickstarts for a laptop and for a
+submit host in AWS, credentials, networking, worker environments, cost and cleanup, troubleshooting,
+and a parameter reference.
 
 ## License
 
