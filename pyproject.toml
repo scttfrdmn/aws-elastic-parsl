@@ -1,0 +1,19 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "aws-elastic-parsl"
+version = "0.1.0"
+description = "Ephemeral AWS execution provider for Parsl"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.10"
+authors = [{ name = "Scott Friedman" }]
+dependencies = ["parsl", "boto3"]
+
+[project.urls]
+Repository = "https://github.com/scttfrdmn/aws-elastic-parsl"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/aws_elastic_parsl"]
