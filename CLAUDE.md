@@ -4,8 +4,8 @@ Ephemeral AWS execution for Parsl. Sister project: ../aws-elastic-gcs.
 
 ## Phases
 1. Done: fixed Parsl's stock `AWSProvider` (parsl/providers/aws/aws.py) and opened upstream PRs
-   Parsl/parsl#4182–#4190 from the fork scttfrdmn/parsl. The local clone is ../parsl-upstream, with
-   one branch per fix and worktrees under ../parsl-upstream-wt/. `aws-provider-integration` merges all
+   Parsl/parsl#4182–#4192 from the fork scttfrdmn/parsl (#4191 and #4192 were split out of
+   #4189 and #4183 in review). The local clone is ../parsl-upstream, with one branch per fix and worktrees under ../parsl-upstream-wt/. `aws-provider-integration` merges all
    the fixes; `aws-provider-fixes-2026.11.09` is that branch with VERSION set to the release.
 2. Done: docs and guides for the stock provider (docs/stock-aws-provider/, upstream PR #4190).
 3. Done: Globus Compute on the fixed provider (globus-compute/; HTEX with reverse tunnels).
